@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from backend.database import engine, Base
-from backend.routers import rules, geo, challan, chat
+from backend.routers import rules, geo, challan, chat, general
 
 # Initialize database tables on startup
 Base.metadata.create_all(bind=engine)
@@ -30,6 +30,7 @@ app.include_router(rules.router, prefix="/api")
 app.include_router(geo.router, prefix="/api")
 app.include_router(challan.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
+app.include_router(general.router, prefix="/api")
 
 @app.get("/api/health")
 def health_check():
@@ -38,7 +39,8 @@ def health_check():
 # Mount frontend static files
 # Make sure the frontend files exist in the directory path
 workspace_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-app.mount("/", StaticFiles(directory=workspace_dir, html=True), name="static")
+www_dir = os.path.join(workspace_dir, "www")
+app.mount("/", StaticFiles(directory=www_dir, html=True), name="static")
 
 if __name__ == "__main__":
     # Start uvicorn server locally on port 8000

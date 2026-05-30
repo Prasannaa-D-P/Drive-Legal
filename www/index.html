@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="DriveLegal India: An offline-first, AI-powered traffic laws assistant, Challan calculator, and geo-fenced jurisdiction rules guide. Check compounding fees, safety rules, and local regulations.">
+  <title>DriveLegal - Indian Traffic Laws & Challan Calculator</title>
+  
+  <!-- FontAwesome Icons for Premium Interface Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+  <!-- --- HEADER / NAVIGATION BAR --- -->
+  <header class="glass-panel">
+    <div class="logo-container">
+      <div class="logo-icon">DL</div>
+      <div>
+        <h1 class="logo-text">DriveLegal<span class="logo-sub">INDIA</span></h1>
+      </div>
+    </div>
+    
+    <nav id="navBar">
+      <button class="nav-tab active" id="tabBtnChatbot" onclick="switchTab('chatbot')">
+        <i class="fa-solid fa-robot"></i> AI Chatbot
+      </button>
+      <button class="nav-tab" id="tabBtnCalculator" onclick="switchTab('calculator')">
+        <i class="fa-solid fa-calculator"></i> Challan Calculator
+      </button>
+      <button class="nav-tab" id="tabBtnRadar" onclick="switchTab('radar')">
+        <i class="fa-solid fa-crosshairs"></i> Jurisdiction Radar
+      </button>
+      <button class="nav-tab" id="tabBtnDirectory" onclick="switchTab('directory')">
+        <i class="fa-solid fa-book-open"></i> Rules Directory
+      </button>
+    </nav>
+    
+    <div class="controls">
+      <div class="offline-indicator online-state" id="offlineIndicator" title="Network status">
+        <span class="status-dot"></span>
+        <span id="offlineIndicatorText">Online</span>
+      </div>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+        <i class="fa-solid fa-moon" id="themeIcon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- --- MAIN WORKSPACE --- -->
+  <main>
+
+    <!-- === TAB 1: AI CHATBOT INTERFACE === -->
+    <section class="tab-content active" id="tabContentChatbot">
+      <div class="chatbot-grid">
+        <!-- Sidebar: Suggestions & Quick Queries -->
+        <aside class="chatbot-sidebar glass-panel" id="chatbotSidebar">
+          <h2 class="chatbot-sidebar-title"><i class="fa-solid fa-circle-question"></i> Common Inquiries</h2>
+          <div class="suggestion-list">
+            <button class="suggestion-chip" onclick="sendSuggestion('What is the fine for riding without a helmet in Bengaluru?')">
+              "Helmet fine in Bengaluru?"
+            </button>
+            <button class="suggestion-chip" onclick="sendSuggestion('What is the penalty for drunk driving in Delhi?')">
+              "Drunk driving penalty in Delhi?"
+            </button>
+            <button class="suggestion-chip" onclick="sendSuggestion('Fine for overspeeding in Mumbai with a LMV Car?')">
+              "Overspeeding car in Mumbai?"
+            </button>
+            <button class="suggestion-chip" onclick="sendSuggestion('How much is the PUC expired fine under MVA?')">
+              "PUC expired fine rate?"
+            </button>
+            <button class="suggestion-chip" onclick="sendSuggestion('What happens if I block an ambulance in Tamil Nadu?')">
+              "Ambulance blocking penalty TN?"
+            </button>
+          </div>
+        </aside>
+        
+        <!-- Main Chat Window -->
+        <div class="chat-main glass-panel">
+          <div class="chat-header">
+            <div class="chat-bot-details">
+              <div class="bot-avatar"><i class="fa-solid fa-gavel"></i></div>
+              <div>
+                <span class="bot-name">LegalBot AI</span>
+                <div class="bot-status"><span class="status-dot" style="background-color: var(--accent-green);"></span> Offline Engine Active</div>
+              </div>
+            </div>
+            <div class="chat-actions">
+              <button class="chat-action-btn" onclick="clearChat()" title="Reset Conversation"><i class="fa-solid fa-trash-can"></i> Clear</button>
+            </div>
+          </div>
+          
+          <div class="chat-messages" id="chatMessagesContainer">
+            <!-- Messages populated dynamically -->
+          </div>
+          
+          <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+              <input type="text" class="chat-input" id="chatInputField" placeholder="Ask about traffic rules, fines, or laws (e.g. 'speeding in Delhi')..." onkeydown="if(event.key === 'Enter') handleUserMessageSubmit()">
+              <button class="voice-input-btn" id="voiceInputBtn" onclick="toggleVoiceInput()" title="Speech Recognition Input">
+                <i class="fa-solid fa-microphone"></i>
+              </button>
+            </div>
+            <button class="send-btn" id="chatSendBtn" onclick="handleUserMessageSubmit()">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- === TAB 2: CHALLAN CALCULATOR === -->
+    <section class="tab-content" id="tabContentCalculator">
+      <div class="calculator-grid">
+        <!-- Violations Selection Panel -->
+        <div class="calculator-left glass-panel">
+          <!-- Selection & Filters Bar -->
+          <div class="violations-header-bar">
+            <h2 class="calculator-title"><i class="fa-solid fa-scale-balanced"></i> Offense Calculator</h2>
+            <div class="search-wrapper">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" class="search-input" id="violationSearchField" placeholder="Search violations (e.g., helmet, license)..." oninput="filterViolations()">
+            </div>
+          </div>
+          
+          <div style="padding: 0 1.5rem 0.5rem 1.5rem;">
+            <!-- Official RTO & OCR Reader Panel -->
+            <div class="glass-card" style="padding: 1rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;">
+              <h3 style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; color: var(--accent-blue);"><i class="fa-solid fa-file-invoice"></i> Official Challan Reader</h3>
+              <div style="display: flex; gap: 0.75rem;">
+                <input type="text" class="chat-input" id="rtoVehicleSearchField" placeholder="Enter Vehicle No. (e.g. DL3CA1234)..." style="padding: 0.55rem 0.75rem; font-size: 0.85rem; border-radius: 8px;">
+                <button class="receipt-btn primary-btn" id="fetchRtoBtn" onclick="fetchOfficialRTOChallan()" style="padding: 0.55rem 1rem; border-radius: 8px; font-size: 0.85rem; flex: 0 0 auto; width: auto; font-family: 'Outfit', sans-serif;"><i class="fa-solid fa-cloud-arrow-down"></i> Fetch RTO</button>
+              </div>
+              <div id="ocrUploadZone" style="border: 1px dashed var(--border-color); border-radius: 8px; padding: 0.75rem; text-align: center; background: rgba(0,0,0,0.15); cursor: pointer;" onclick="document.getElementById('challanOcrFileInput').click()">
+                <input type="file" id="challanOcrFileInput" style="display:none;" accept="image/*,.pdf,.txt" onchange="uploadChallanReceiptForOcr(this.files[0])">
+                <span id="ocrUploadText" style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-solid fa-camera"></i> Upload Challan Image/PDF for OCR Reader</span>
+              </div>
+            </div>
+
+            <div class="calculator-settings">
+              <div class="select-wrapper">
+                <label for="stateSelector">State / Jurisdiction</label>
+                <select class="form-select" id="stateSelector" onchange="handleCalculatorStateOrVehicleChange()">
+                  <!-- Dynamically filled -->
+                </select>
+              </div>
+              <div class="select-wrapper">
+                <label for="vehicleTypeSelector">Vehicle Type</label>
+                <select class="form-select" id="vehicleTypeSelector" onchange="handleCalculatorStateOrVehicleChange()">
+                  <!-- Dynamically filled -->
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="violations-scroller" id="violationsScrollerContainer">
+            <!-- Dynamically populated violations categories and cards -->
+          </div>
+        </div>
+        
+        <!-- Challan Receipt Summary Panel -->
+        <div class="calculator-right glass-panel">
+          <div class="receipt-panel" id="receiptPanelContainer">
+            <div class="receipt-header">
+              <h2 class="receipt-title">Challan Summary</h2>
+              <p class="receipt-subtitle">ESTIMATED COMPOUNDING FEES Breakdown</p>
+            </div>
+            
+            <div class="receipt-info-row">
+              <span>Jurisdiction:</span>
+              <span id="receiptJurisdictionText">Delhi (NCT)</span>
+            </div>
+            <div class="receipt-info-row">
+              <span>Vehicle Class:</span>
+              <span id="receiptVehicleText">LMV (Car)</span>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.75rem 0;">
+            
+            <!-- List of selected violations in calculator -->
+            <div class="receipt-items-container" id="receiptItemsContainer">
+              <!-- Dynamically populated or showing empty message -->
+            </div>
+            
+            <!-- Repeat Offense Modifier Switch -->
+            <div class="repeat-offense-panel">
+              <div class="repeat-label-block">
+                <span class="repeat-title-text">Subsequent Offenses?</span>
+                <span class="repeat-desc-text">Applies secondary/higher penalty schedules</span>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="repeatOffenseToggle" onchange="toggleRepeatOffenseMultiplier()">
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <!-- Calculator calculations and outcomes -->
+            <div class="receipt-summary">
+              <div class="summary-row">
+                <span>Base Compounding Penalty:</span>
+                <span id="receiptBasePenaltyText">₹0</span>
+              </div>
+              <div class="summary-row">
+                <span>State Multipliers/Surcharges:</span>
+                <span id="receiptSurchargeText">₹0</span>
+              </div>
+              <div class="summary-row total">
+                <span>Total Due:</span>
+                <span id="receiptTotalText">₹0</span>
+              </div>
+            </div>
+            
+            <!-- Legal warnings/information -->
+            <div class="summary-legal-advice" id="receiptLegalAdviceBox" style="display: none;">
+              <!-- Dynamically filled with specific warning or general guidelines -->
+            </div>
+            
+            <div class="receipt-actions">
+              <button class="receipt-btn secondary-btn" onclick="resetCalculatorReceipt()"><i class="fa-solid fa-arrow-rotate-left"></i> Reset</button>
+              <button class="receipt-btn primary-btn" onclick="printOrSaveReceipt()"><i class="fa-solid fa-download"></i> Save Receipt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- === TAB 3: GEO-FENCE RADAR === -->
+    <section class="tab-content" id="tabContentRadar">
+      <div class="radar-grid">
+        <!-- Geo-fencing Controls and details -->
+        <div class="radar-left glass-panel">
+          <h2 class="radar-panel-title"><i class="fa-solid fa-location-crosshairs"></i> Geo-Fence Radar</h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Auto-detects or simulates your current spatial coordinates to identify the local legal traffic jurisdiction, emergency responders, and region-specific enforcement laws.
+          </p>
+          
+          <!-- GPS Coordinates readout card -->
+          <div class="gps-readout-card glass-card">
+            <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-satellite"></i> GPS Coordinates</h3>
+            <div class="gps-coordinates">
+              <div class="gps-coord-box">
+                <div class="gps-coord-label">Latitude</div>
+                <div class="gps-coord-val" id="gpsLatitudeText">28.6139</div>
+              </div>
+              <div class="gps-coord-box">
+                <div class="gps-coord-label">Longitude</div>
+                <div class="gps-coord-val" id="gpsLongitudeText">77.2090</div>
+              </div>
+            </div>
+            <button class="locate-btn" id="geoLocateBtn" onclick="triggerGeofencedLocate()">
+              <i class="fa-solid fa-location-arrow"></i> Detect Location
+            </button>
+          </div>
+          
+          <!-- Current Active Jurisdiction card -->
+          <div class="radar-jurisdiction-card glass-card">
+            <span class="jurisdiction-title">Active Jurisdiction</span>
+            <div class="jurisdiction-name" id="radarJurisdictionNameText">Delhi (NCT)</div>
+            
+            <h4 style="font-size: 0.85rem; margin-top: 0.5rem;">Local Hotlines</h4>
+            <div class="emergency-numbers-grid" id="radarEmergencyContactsGrid">
+              <!-- Dynamically populated emergency numbers -->
+            </div>
+          </div>
+          
+          <!-- Local guidelines card -->
+          <div class="radar-local-rules-card glass-card">
+            <h3 style="font-size: 0.95rem;"><i class="fa-solid fa-circle-exclamation"></i> Enforced Local Rules</h3>
+            <ul class="radar-local-rules-list" id="radarLocalRulesList">
+              <!-- Dynamically populated local rules list -->
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Interactive Scanning Radar Screen -->
+        <div class="radar-right glass-panel">
+          <div class="radar-canvas-container">
+            <canvas id="radarCanvas" width="500" height="500"></canvas>
+            <div class="radar-coordinate-marker" id="radarCoordMarker" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- === TAB 4: LAWS DIRECTORY === -->
+    <section class="tab-content" id="tabContentDirectory">
+      <div class="directory-wrapper">
+        <div class="directory-header">
+          <h2 class="directory-title">Traffic Regulations Directory</h2>
+          <p class="directory-subtitle">Official legislative codes and state amendment tables side-by-side</p>
+        </div>
+        
+        <div class="directory-controls">
+          <div class="directory-search">
+            <i class="fa-solid fa-magnifying-glass search-icon" style="left: 14px;"></i>
+            <input type="text" class="directory-search-input" id="directorySearchField" placeholder="Search laws by name, section, keyword (e.g. helmet, PUC)..." oninput="filterDirectory()">
+          </div>
+          <div class="directory-filter">
+            <select class="form-select" style="width: 100%; height: 100%;" id="directoryCategoryFilter" onchange="filterDirectory()">
+              <option value="all">All Categories</option>
+              <option value="Safety Equipment">Safety Equipment</option>
+              <option value="Speeding & Driving">Speeding & Driving</option>
+              <option value="Traffic Violation">Traffic Violations</option>
+              <option value="Documents">Documentation & Permits</option>
+              <option value="Parking">Parking Regulations</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="directory-accordion" id="directoryAccordionContainer">
+          <!-- Accordion elements populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- --- JAVASCRIPT SCRIPTS --- -->
+  <!-- Laws Database (pre-populated) -->
+  <script src="data/laws_india.js"></script>
+  <!-- Geofencing & Canvas Radar -->
+  <script src="radar.js"></script>
+  <!-- Client-Side NLP Chatbot -->
+  <script src="chatbot.js"></script>
+  <!-- Challan Calculator Logic -->
+  <script src="calculator.js"></script>
+  <!-- Application Core State Management -->
+  <script src="app.js"></script>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" aria-live="polite"></div>
+</body>
+</html>

@@ -196,7 +196,7 @@ class TrafficLegalChatbot {
   }
 
   // Handle user incoming text query
-  handleMessage(text) {
+  async handleMessage(text) {
     if (!text || text.trim() === "") return;
     
     // Show user message in UI
@@ -205,11 +205,122 @@ class TrafficLegalChatbot {
     // Show bot thinking
     this.showTypingIndicator();
     
-    // Simulate thinking delay and parse NLP response
+    // Determine state code
+    let stateKey = null;
+    const normalized = text.toLowerCase();
+    const stateKeywords = {
+      delhi: [/delhi/, /nct/, /capital/, /new delhi/],
+      karnataka: [/karnataka/, /bengaluru/, /bangalore/, /mysore/, /ka\d+/],
+      maharashtra: [/maharashtra/, /mumbai/, /bombay/, /pune/, /nagpur/, /mh\d+/],
+      tamil_nadu: [/tamil nadu/, /tamilnadu/, /chennai/, /madras/, /coimbatore/, /tn\d+/],
+      west_bengal: [/west bengal/, /westbengal/, /kolkata/, /calcutta/, /wb\d+/],
+      telangana: [/telangana/, /hyderabad/, /ts\d+/, /tg\d+/]
+    };
+    for (const [key, regexes] of Object.entries(stateKeywords)) {
+      if (regexes.some(rx => normalized.match(rx))) {
+        stateKey = key;
+        break;
+      }
+    }
+    
+    if (!stateKey && window.calculator && window.calculator.selectedState) {
+      stateKey = window.calculator.selectedState;
+    }
+    if (!stateKey) {
+      stateKey = "delhi";
+    }
+    
+    const stateCode = (DRIVELEGAL_DATA.states[stateKey] && DRIVELEGAL_DATA.states[stateKey].code) || "DL";
+    
+    let backendAnswered = false;
+    let responseHTML = "";
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          state_code: stateCode,
+          language: 'en'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'success' && data.matched_question) {
+          backendAnswered = true;
+          const matchedStateName = DRIVELEGAL_DATA.states[stateKey] ? DRIVELEGAL_DATA.states[stateKey].name : stateKey;
+          responseHTML = `<p><strong>Matched FAQ:</strong> "${escapeHTML(data.matched_question)}" (${escapeHTML(matchedStateName)})</p>
+                          <div style="background: rgba(59,130,246,0.08); border-left: 4px solid var(--accent-blue); padding: 0.8rem; margin: 0.75rem 0; border-radius: 4px;">
+                            <p style="margin: 0; line-height: 1.5;">${escapeHTML(data.answer)}</p>
+                          </div>`;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to get response from backend AI chat endpoint, falling back to local NLP parser", err);
+    }
+    
     setTimeout(() => {
       this.removeTypingIndicator();
-      const response = this.parseQuery(text);
-      this.appendMessage("bot", response.html, response.action);
+      if (backendAnswered) {
+        // Also look up if we can offer an action button for calculator injection if it's a known violation
+        let matchedViolation = null;
+        const violationKeywords = {
+          no_helmet: [/helmet/, /headgear/, /head protect/],
+          triple_riding: [/triple/, /3 riding/, /three riding/, /three people on bike/, /3 people on bike/],
+          no_seatbelt: [/seatbelt/, /seat belt/, /belt/],
+          drunk_driving: [/drunk/, /drink/, /alcohol/, /liquor/, /whisky/, /beer/, /intoxicated/],
+          speeding: [/speed/, /speeding/, /fast/, /limit/],
+          red_light_jumping: [/red light/, /signal/, /traffic light/, /signal jump/, /jump/],
+          using_mobile: [/phone/, /mobile/, /texting/, /calling/, /handheld/, /cellular/],
+          no_driving_license: [/license/, /licence/, /driving license/, /dl/],
+          no_rc: [/rc/, /registration/, /rc book/, /reg certificate/],
+          no_insurance: [/insurance/, /third party/, /insurace/],
+          no_pucc: [/puc/, /pucc/, /pollution/, /smoke/, /emission/, /exhaust/],
+          obstructive_parking: [/park/, /parking/, /wrong park/, /no parking/],
+          emergency_vehicle_blocking: [/ambulance/, /emergency/, /fire engine/, /blocking ambulance/],
+          no_entry: [/no entry/, /wrong way/, /one way/, /one-way/, /against traffic/]
+        };
+
+        for (const [id, regexes] of Object.entries(violationKeywords)) {
+          if (regexes.some(rx => normalized.match(rx))) {
+            matchedViolation = DRIVELEGAL_DATA.violations.find(v => v.id === id);
+            break;
+          }
+        }
+
+        let action = null;
+        if (matchedViolation) {
+          let matchedVehicleKey = "lmv";
+          const vehicleKeywords = {
+            two_wheeler: [/bike/, /motorcycle/, /two wheeler/, /2 wheeler/, /scooter/, /scoty/, /bullet/, /activa/],
+            three_wheeler: [/auto/, /rickshaw/, /three wheeler/, /3 wheeler/, /tuk/],
+            lmv: [/car/, /jeep/, /suv/, /sedan/, /hatchback/, /lmv/],
+            hgv: [/truck/, /bus/, /lorry/, /heavy vehicle/, /hgv/, /dumper/]
+          };
+          for (const [key, regexes] of Object.entries(vehicleKeywords)) {
+            if (regexes.some(rx => normalized.match(rx))) {
+              matchedVehicleKey = key;
+              break;
+            }
+          }
+          if (matchedViolation.id === 'no_helmet' || matchedViolation.id === 'triple_riding') {
+            matchedVehicleKey = 'two_wheeler';
+          }
+          action = {
+            label: `<i class="fa-solid fa-cart-plus"></i> Add to Challan Calculator`,
+            callback: () => {
+              injectIntoCalculator(stateKey, matchedVehicleKey, matchedViolation.id);
+            }
+          };
+        }
+        
+        this.appendMessage("bot", responseHTML, action);
+      } else {
+        const response = this.parseQuery(text);
+        this.appendMessage("bot", response.html, response.action);
+      }
     }, 600);
   }
 

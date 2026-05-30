@@ -1,7 +1,9 @@
 // DriveLegal Main Application Controller
 // Orchestrates theme switching, tab routing, geofencing queries, directory renders, and offline triggers.
 
-const API_BASE_URL = 'http://192.168.0.4:8000/api';
+const API_BASE_URL = window.location.protocol.startsWith('http') 
+  ? `${window.location.origin}/api` 
+  : 'http://localhost:8000/api';
 
 // Global instances
 let chatbot;

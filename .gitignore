@@ -1,0 +1,28 @@
+# Python virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# Node / JS dependencies
+node_modules/
+package-lock.json
+expo-app/node_modules/
+expo-app/package-lock.json
+.expo/
+expo-app/.expo/
+
+# Local databases and SQLite files
+*.db
+drivelegal.db
+
+# Environment variables
+.env
+
+# Text extraction / Temporary files
+extracted_doc.txt
+extracted_schema.txt
+*.log
+
+# Editor configurations
+.vscode/
+.idea/
